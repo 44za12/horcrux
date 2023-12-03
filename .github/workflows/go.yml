@@ -1,18 +1,19 @@
-name: Go
+name: Go Build and Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - 'v*'
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         goos: [linux, windows, darwin]
         goarch: [amd64]
+    env:
+      OUTPUT_NAME: horcrux-${{ matrix.goos }}-${{ matrix.goarch }}
     steps:
     - uses: actions/checkout@v3
 
@@ -23,12 +24,36 @@ jobs:
 
     - name: Build
       run: |
-        export GOOS=${{ matrix.goos }}
-        export GOARCH=${{ matrix.goarch }}
-        go build -v -o horcrux-${{ matrix.goos }}-${{ matrix.goarch }} ./...
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          echo "OUTPUT_NAME=${{ env.OUTPUT_NAME }}.exe" >> $GITHUB_ENV
+        fi
+        go build -v -o ${{ env.OUTPUT_NAME }} ./...
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: horcrux-${{ matrix.goos }}-${{ matrix.goarch }}
-        path: horcrux-${{ matrix.goos }}-${{ matrix.goarch }}
+        name: ${{ matrix.goos }}-${{ matrix.goarch }}
+        path: ${{ env.OUTPUT_NAME }}
+
+    - name: Create Release
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ env.OUTPUT_NAME }}
+        asset_name: ${{ env.OUTPUT_NAME }}
+        asset_content_type: application/octet-stream
