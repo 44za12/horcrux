@@ -20,17 +20,17 @@ jobs:
         go-version: '1.20'
     - name: Build
       run: |
+        OUTPUT_NAME="horcrux-${{ matrix.goos }}-${{ matrix.goarch }}"
         if [ "${{ matrix.goos }}" = "windows" ]; then
-          OUTPUT_NAME=horcrux-${{ matrix.goos }}-${{ matrix.goarch }}.exe
-        else
-          OUTPUT_NAME=horcrux-${{ matrix.goos }}-${{ matrix.goarch }}
+          OUTPUT_NAME="${OUTPUT_NAME}.exe"
         fi
-        go build -v -o $OUTPUT_NAME ./...
+        echo "OUTPUT_NAME=${OUTPUT_NAME}" >> $GITHUB_ENV
+        go build -v -o ${OUTPUT_NAME} ./...
     - name: Upload Artifacts
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.goos }}-${{ matrix.goarch }}
-        path: $OUTPUT_NAME
+        path: ${{ env.OUTPUT_NAME }}
 
   create-release:
     needs: build
