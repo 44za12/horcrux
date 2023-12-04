@@ -27,7 +27,7 @@ Horcrux is available for Windows, macOS, and Linux. You can install it by downlo
 
 ## Downloading the Binary
 
-1. **Go to the Releases Page**: Visit the [Horcrux Releases page](https://github.com/[44za12]/horcrux/releases) on GitHub.
+1. **Go to the Releases Page**: Visit the [Horcrux Releases page](https://github.com/44za12/horcrux/releases) on GitHub.
    
 2. **Download the Binary**: Download the binary for your operating system:
    - For Windows: `horcrux-windows-amd64.exe`
