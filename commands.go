@@ -179,7 +179,7 @@ func fuzzySearchPassCommand(c *cli.Context) error {
     }
     query := c.Args().Get(0)
     passphrase := getPassphraseInput("Enter your passphrase: ")
-    storedData, err := DecryptBSONFile("passes.bson", passphrase)
+    storedData, err := DecryptBSONFile(passespath, passphrase)
     if err != nil {
         return err
     }
@@ -209,7 +209,7 @@ func fuzzySearchTOTPCommand(c *cli.Context) error {
     }
     query := c.Args().Get(0)
     passphrase := getPassphraseInput("Enter your passphrase: ")
-    storedData, err := DecryptBSONFile("totp.bson", passphrase)
+    storedData, err := DecryptBSONFile(totppasspath, passphrase)
     if err != nil {
         return err
     }

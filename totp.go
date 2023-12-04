@@ -52,7 +52,7 @@ func generateTOTP(secretKey string) int {
 }
 
 func addUpdateTOTP(service string, secretKey string, passphrase string) {
-	decryptedData, err := DecryptBSONFile("totp.bson", passphrase)
+	decryptedData, err := DecryptBSONFile(totppasspath, passphrase)
     if err != nil {
         panic(err)
     }
@@ -63,14 +63,14 @@ func addUpdateTOTP(service string, secretKey string, passphrase string) {
 		decryptedData["totp"] = map[string]string{}
 		decryptedData["totp"][service] = secretKey
 	}
-	err = EncryptBSONFile("totp.bson", decryptedData, passphrase)
+	err = EncryptBSONFile(totppasspath, decryptedData, passphrase)
 	if err != nil {
         panic(err)
     }
 }
 
 func removeTOTP(service string, passphrase string) {
-	decryptedData, err := DecryptBSONFile("totp.bson", passphrase)
+	decryptedData, err := DecryptBSONFile(totppasspath, passphrase)
     if err != nil {
         panic(err)
     }
@@ -78,14 +78,14 @@ func removeTOTP(service string, passphrase string) {
 	if ok {
 		delete(decryptedData["totp"], service)
 	}
-	err = EncryptBSONFile("totp.bson", decryptedData, passphrase)
+	err = EncryptBSONFile(totppasspath, decryptedData, passphrase)
 	if err != nil {
         panic(err)
     }
 }
 
 func getTOTP(service string, passphrase string) int {
-	decryptedData, err := DecryptBSONFile("totp.bson", passphrase)
+	decryptedData, err := DecryptBSONFile(totppasspath, passphrase)
     if err != nil {
         panic(err)
     }

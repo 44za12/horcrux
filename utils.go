@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -11,6 +14,13 @@ import (
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+var (
+	datadir = getDefaultDataPath()
+	passespath = fmt.Sprintf("%s/passes.hrcrx", datadir)
+	mainpasspath = fmt.Sprintf("%s/mainpass.hrcrx", datadir)
+	totppasspath = fmt.Sprintf("%s/totp.hrcrx", datadir)
+)
 
 func generateRandomString(length int) string {
 	rand.Seed(time.Now().UnixNano())
@@ -31,3 +41,24 @@ func getPassphraseInput(prompt string) string {
     return string(passphraseBytes)
 }
 
+func getDefaultDataPath() string {
+    var dataDir string
+    if runtime.GOOS == "windows" {
+        appDataDir, err := os.UserHomeDir()
+        if err != nil {
+            panic(err)
+        }
+        dataDir = filepath.Join(appDataDir, "AppData", "Local", "Horcrux")
+    } else {
+        homeDir, err := os.UserHomeDir()
+        if err != nil {
+            panic(err)
+        }
+        dataDir = filepath.Join(homeDir, ".horcrux")
+    }
+    err := os.MkdirAll(dataDir, 0700)
+    if err != nil {
+        panic(err)
+    }
+    return dataDir
+}

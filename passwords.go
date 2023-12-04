@@ -1,7 +1,7 @@
 package main
 
 func addUpdatePassword(site string, username string, password string, passphrase string) {
-	decryptedData, err := DecryptBSONFile("passes.bson", passphrase)
+	decryptedData, err := DecryptBSONFile(passespath, passphrase)
     if err != nil {
         panic(err)
     }
@@ -12,14 +12,14 @@ func addUpdatePassword(site string, username string, password string, passphrase
 		decryptedData[site] = map[string]string{}
 		decryptedData[site][username] = password
 	}
-	err = EncryptBSONFile("passes.bson", decryptedData, passphrase)
+	err = EncryptBSONFile(passespath, decryptedData, passphrase)
 	if err != nil {
         panic(err)
     }
 }
 
 func removePassword(site string, username string, passphrase string) {
-	decryptedData, err := DecryptBSONFile("passes.bson", passphrase)
+	decryptedData, err := DecryptBSONFile(passespath, passphrase)
     if err != nil {
         panic(err)
     }
@@ -27,14 +27,14 @@ func removePassword(site string, username string, passphrase string) {
 	if ok {
 		delete(decryptedData[site], username)
 	}
-	err = EncryptBSONFile("passes.bson", decryptedData, passphrase)
+	err = EncryptBSONFile(passespath, decryptedData, passphrase)
 	if err != nil {
         panic(err)
     }
 }
 
 func getPassword(site string, username string, passphrase string) string {
-	decryptedData, err := DecryptBSONFile("passes.bson", passphrase)
+	decryptedData, err := DecryptBSONFile(passespath, passphrase)
     if err != nil {
         panic(err)
     }

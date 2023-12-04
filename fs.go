@@ -2,14 +2,12 @@ package main
 
 func InitBSONFiles(passphrase string) (string, error) {
     data := make(map[string]map[string]string)
-    filePath := "passes.bson"
 	randomStringForPassPhraseRecovery, err := encryptPassphraseAndStore(passphrase)
-	_ = EncryptBSONFile(filePath, data, passphrase)
+	_ = EncryptBSONFile(passespath, data, passphrase)
 	if err != nil {
         panic(err)
     }
-	filePath = "totp.bson"
-    return randomStringForPassPhraseRecovery, EncryptBSONFile(filePath, data, passphrase)
+    return randomStringForPassPhraseRecovery, EncryptBSONFile(totppasspath, data, passphrase)
 }
 
 func encryptPassphraseAndStore(passphrase string) (string, error) {
@@ -17,11 +15,11 @@ func encryptPassphraseAndStore(passphrase string) (string, error) {
 	mainpass["password"] = map[string]string{}
 	randomStringForPassPhrase := generateRandomString(20)
 	mainpass["password"][randomStringForPassPhrase] = passphrase
-	return randomStringForPassPhrase, EncryptBSONFile("mainpass.bson", mainpass, randomStringForPassPhrase)
+	return randomStringForPassPhrase, EncryptBSONFile(mainpasspath, mainpass, randomStringForPassPhrase)
 }
 
 func decryptPassPhrase(randomStringForPassPhraseRecovery string) string {
-	passphraseMap, err := DecryptBSONFile("mainpass.bson", randomStringForPassPhraseRecovery)
+	passphraseMap, err := DecryptBSONFile(mainpasspath, randomStringForPassPhraseRecovery)
 	if err != nil {
 		panic(err)
 	}
