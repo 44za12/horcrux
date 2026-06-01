@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run gosec (SAST)
+        run: gosec -no-fail -fmt=github-actions -out=gosec.sarif ./...
+
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./internal/... ./storage/... -v -count=1
+
+  build-cli:
+    needs: test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build CLI (macOS arm64)
+        run: CGO_ENABLED=1 go build -o horcrux-darwin-arm64 ./cmd/cli/
+
+      - name: Build CLI (macOS amd64)
+        run: CGO_ENABLED=1 GOARCH=amd64 go build -o horcrux-darwin-amd64 ./cmd/cli/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-darwin-arm64
+          path: horcrux-darwin-arm64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-darwin-amd64
+          path: horcrux-darwin-amd64
+
+  build-gui:
+    needs: test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build GUI
+        run: |
+          cd gui
+          wails build -skipbindings
+          codesign --force --deep --sign - build/bin/Horcrux.app
+
+      - name: Create DMG
+        run: bash scripts/build-dmg.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Horcrux-macOS
+          path: dist/Horcrux-Installer.dmg

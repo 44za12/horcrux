@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-cli:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build CLI (arm64)
+        run: CGO_ENABLED=1 go build -ldflags="-s -w" -o horcrux-darwin-arm64 ./cmd/cli/
+
+      - name: Build CLI (amd64)
+        run: CGO_ENABLED=1 GOARCH=amd64 go build -ldflags="-s -w" -o horcrux-darwin-amd64 ./cmd/cli/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-darwin-arm64
+          path: horcrux-darwin-arm64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-darwin-amd64
+          path: horcrux-darwin-amd64
+
+  build-gui:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build GUI
+        run: |
+          cd gui
+          wails build -skipbindings
+          codesign --force --deep --sign - build/bin/Horcrux.app
+
+      - name: Create DMG
+        run: bash scripts/build-dmg.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Horcrux-macOS
+          path: dist/Horcrux-Installer.dmg
+
+  release:
+    needs: [build-cli, build-gui]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/cli-darwin-arm64/horcrux-darwin-arm64
+            artifacts/cli-darwin-amd64/horcrux-darwin-amd64
+            artifacts/Horcrux-macOS/Horcrux-Installer.dmg

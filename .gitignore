@@ -1,3 +1,45 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Build output
+dist/
+gui/build/
+gui/frontend/dist/
+gui/frontend/node_modules/
+gui/frontend/package.json.md5
+Horcrux.app
+horcrux
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Test coverage
+coverage/
+*.out
+
+# Go
+*.test
+*.prof
+
+# User data (encrypted vault files and exports)
 *.csv
 *.json
 *.bson
+
+# OS
+Thumbs.db

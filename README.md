@@ -1,103 +1,115 @@
-# horcrux: CLI Password Manager
+# Horcrux
 
-horcrux is a command-line interface (CLI) password manager designed for simplicity and security. It offers an intuitive way to manage your passwords and TOTP configurations directly from the terminal.
+### Distributed, Zero-Trust Secret Manager
+
+A secret manager that splits your vault across multiple cloud providers using Shamir's Secret Sharing and Reed-Solomon erasure coding — no single point of failure, no single point of compromise.
+
+---
 
 ## Features
 
-- **Password Management**: Securely store and retrieve passwords.
-- **TOTP Support**: Manage Time-based One-Time Passwords (TOTP) configurations.
-- **Fuzzy Search**: Quickly find passwords and TOTP configurations using approximate search queries.
-- **Password Recovery**: Recover your forgotten master passphrase.
-- **Import Functionalities**: Import passwords and TOTP configurations from external sources like CSV and JSON files.
+- **Password, TOTP, API Key & File Management** — Securely store, retrieve, and organize all your secrets.
+- **Distributed Backup** — Vault split across up to 7 cloud providers. Need M-of-N to recover — lose a provider, you're still safe.
+- **Incremental Distribution** — Content-addressed segments mean only changed data is re-uploaded. GB-scale vaults distribute in seconds.
+- **Touch ID Unlock** — Biometric unlock via macOS Keychain. Falls back gracefully to passphrase on Macs without Touch ID.
+- **7 Storage Providers** — Local filesystem, Google Drive, Dropbox, S3/MinIO, USB drives, SSH/SFTP, and WebDAV.
+- **Zero-Knowledge** — Providers see only opaque encrypted blobs. The vault passphrase never leaves your machine.
+- **Fuzzy Search** — Find passwords and TOTP entries with approximate queries.
+- **Import** — CSV passwords, 2FAS JSON TOTP exports.
+- **Cross-Platform CLI** — Go binary runs on macOS, Linux, and Windows. GUI is macOS-native (Wails + Svelte).
 
-## Technical Details
+---
 
-horcrux employs a range of cryptographic techniques and algorithms to ensure the security of your data:
+## Quick Start
 
-- **AES Encryption**: For the secure storage of passwords and TOTP configurations, Horcrux uses Advanced Encryption Standard (AES) in GCM mode. This choice provides both confidentiality and integrity of stored data.
-- **PBKDF2 for Key Derivation**: The encryption key for AES is derived using PBKDF2 (Password-Based Key Derivation Function 2) with a SHA-256 hash function. This adds a layer of security against brute-force attacks by making it computationally expensive to try multiple passwords.
-- **BSON Data Format**: Data is serialized in BSON (Binary JSON) format before being encrypted. BSON is chosen for its efficiency in both space and speed, which is beneficial for storing structured data.
-- **HMAC-SHA1 for TOTP**: Time-based One-Time Passwords (TOTPs) are generated using HMAC-SHA1 algorithm, complying with the TOTP standard (RFC 6238). This method is widely adopted for two-factor authentication.
-- **Fuzzy Search**: For user convenience, Horcrux provides a fuzzy search feature, allowing users to find their stored credentials even with approximate queries. It uses a fuzzy string matching algorithm to search through the titles and usernames.
-- **Cross-Platform Compatibility**: Horcrux is built in Go, ensuring it runs smoothly across different operating systems including Windows, macOS, and Linux.
+### macOS GUI
 
-## Installation
+1. Download `Horcrux.app` from [Releases](https://github.com/44za12/horcrux/releases) and move to `/Applications`.
+2. Launch, create a passphrase, and start adding passwords.
+3. Add 2+ storage providers under Providers, then Distribute to back up your vault.
 
-Horcrux is available for Windows, macOS, and Linux. You can install it by downloading the appropriate binary for your operating system from the GitHub Releases page.
+### CLI (macOS / Linux / Windows)
 
-## Downloading the Binary
+```bash
+# Download and install
+curl -L https://github.com/44za12/horcrux/releases/latest/download/horcrux-darwin-arm64 -o /usr/local/bin/horcrux
+chmod +x /usr/local/bin/horcrux
 
-1. **Go to the Releases Page**: Visit the [Horcrux Releases page](https://github.com/44za12/horcrux/releases) on GitHub.
-   
-2. **Download the Binary**: Download the binary for your operating system:
-   - For Windows: `horcrux-windows-amd64.exe`
-   - For macOS: `horcrux-darwin-amd64`
-   - For Linux: `horcrux-linux-amd64`
+# Initialize
+horcrux init
 
-3. **Make the Binary Executable** (macOS/Linux):
-   - Open a terminal.
-   - Navigate to the directory where you downloaded Horcrux.
-   - Run the command `chmod +x horcrux-darwin-amd64` or `chmod +x horcrux-linux-amd64` to make the file executable.
+# Add a password
+horcrux pass addpass github.com user@email.com mypassword
 
-## Installation Steps
+# Get a password
+horcrux pass getpass github.com user@email.com
 
-### Windows
+# Add a provider and distribute
+horcrux providers auth local
+horcrux providers auth s3 --endpoint s3.amazonaws.com --bucket my-bucket
+horcrux distribute
 
-- After downloading, you can run `horcrux-windows-amd64.exe` directly from the command prompt.
+# Restore from providers
+horcrux restore
+```
 
-### macOS
+---
 
-- Move `horcrux-darwin-amd64` to a directory in your `PATH` (e.g., `/usr/local/bin`).
-- Rename the file for convenience: `mv horcrux-darwin-amd64 horcrux`.
-- Run `horcrux` from the terminal.
+## Cryptography
 
-### Linux
+| Layer | Algorithm | Key |
+|---|---|---|
+| Vault files (at rest) | AES-256-GCM | Argon2id(passphrase) |
+| Distribution segments | AES-256-GCM (deterministic) | Random 32-byte DEK |
+| DEK protection | Shamir's Secret Sharing over GF(2⁸) | M-of-N threshold |
+| Data fault tolerance | Reed-Solomon erasure coding | M data + N−M parity shards |
+| Passphrase verification | PBKDF2 + HMAC-SHA256 | 100k iterations |
 
-- Move `horcrux-linux-amd64` to a directory in your `PATH` (e.g., `/usr/local/bin`).
-- Rename the file for convenience: `mv horcrux-linux-amd64 horcrux`.
-- Run `horcrux` from the terminal.
+---
 
-## Usage
+## Project Structure
 
-### Initial Setup
+```
+horcrux/
+├── cmd/cli/                    # CLI application (urfave/cli)
+├── gui/                        # macOS GUI (Wails v2 + Svelte 4)
+│   ├── app.go                  # Go backend methods
+│   └── frontend/src/components/
+├── docs/                       # Documentation
+├── internal/
+│   ├── auth/                   # Touch ID + Keychain (CGo)
+│   ├── config/                 # Path configuration
+│   ├── crypto/                 # Argon2id + AES-256-GCM
+│   ├── distribute/             # Distribution engine
+│   │   ├── distribute.go       # Distribute / Restore / GC
+│   │   ├── segment/            # Content-addressed segments
+│   │   └── manifest/           # Versioned manifest
+│   ├── providers/              # Provider config CRUD
+│   ├── shamir/                 # GF(256) Secret Sharing
+│   └── vault/                  # Vault CRUD + chunked file store
+│       └── filestore/          # Content-addressed file chunks
+├── storage/                    # 7 provider implementations
+└── scripts/                    # Build helpers
+```
 
-- To initialize horcrux, run: `horcrux init`. You'll be prompted to set a passphrase.
+---
 
-### Password Commands
+## Build From Source
 
-- **Add a Password**: `horcrux pass addpass [site] [username] [password]`
-- **Remove a Password**: `horcrux pass removepass [site] [username]`
-- **Retrieve a Password**: `horcrux pass getpass [site] [username]`
-- **Import Passwords from CSV**: `horcrux pass importcsv [CSV file path]`
-- **Fuzzy Search for Passwords**: `horcrux pass fuzzysearch [search query]`
+```bash
+# Prerequisites: Go 1.22+, Node 20+, Wails CLI
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-### TOTP Commands
+# CLI
+go build -o /usr/local/bin/horcrux ./cmd/cli/
 
-- **Add a TOTP Configuration**: `horcrux totp addtotp [service] [secretKey]`
-- **Get a Current TOTP Code**: `horcrux totp gettotp [service]`
-- **Remove a TOTP Service**: `horcrux totp removetotp [service]`
-- **Fuzzy Search for TOTP Configurations**: `horcrux totp fuzzysearch [search query]`
-- **Import TOTP Configurations from JSON**: `horcrux totp importtotp [JSON file path]`
+# GUI
+cd gui && wails build -nopackage
+# App bundle at gui/build/bin/Horcrux
+```
 
-### Recovering Forgotten Password
+---
 
-- If you forget your passphrase, use `horcrux recoverpass` to recover it.
-
-## Importing Passwords from iCloud Keychain
-
-To import passwords from iCloud Keychain into horcrux:
-
-Go to System Preferences > Passwords and authenticate with your admin password or Touch ID. Then, click the three-dotted Menu button in the bottom toolbar, and choose the “Export Passwords” option.
-
-1. **Export Passwords from iCloud Keychain**: 
-   - On your Mac, go to System Preferences > Passwords.
-   - Click the three-dotted Menu button in the bottom toolbar, and choose the “Export Passwords” option.
-   - Save the file preferably in the same directory as horcrux.
-
-2. **Import into horcrux**:
-   - Use the command: `horcrux pass importcsv [path to your exported CSV file]`.
-   - This will import your passwords from the Keychain into horcrux.
-
-## Contributing
+## License & Contributing
 
 Contributions, issues, and feature requests are welcome.
