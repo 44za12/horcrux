@@ -1,8 +1,6 @@
 module horcrux
 
-go 1.22.0
-
-toolchain go1.22.10
+go 1.25
 
 require (
 	github.com/klauspost/reedsolomon v1.12.4
