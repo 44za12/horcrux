@@ -85,8 +85,10 @@ func TestErasureEncodeDecodeRoundTrip(t *testing.T) {
 		t.Fatalf("expected %d shards, got %d", dataShards+parityShards, len(shards))
 	}
 
-	// Test recovery with exactly M shards
-	recovered, err := segment.ErasureDecodeSegment(shards[:dataShards], dataShards, dataShards+parityShards)
+	// Test recovery with exactly M shards (pad to full length with nils)
+	fullShards := make([][]byte, dataShards+parityShards)
+	copy(fullShards, shards[:dataShards])
+	recovered, err := segment.ErasureDecodeSegment(fullShards, dataShards, dataShards+parityShards)
 	if err != nil {
 		t.Fatalf("ErasureDecodeSegment: %v", err)
 	}
@@ -139,7 +141,7 @@ func TestFullPipeline(t *testing.T) {
 	tmpCfg := config.New("")
 	tmpCfg.PassesPath = tmpPasses.Name()
 	tmpCfg.TotpPassPath = tmpTotp.Name()
-	tmpCfg.ApiKeysPath = tmpPasses.Name() // reuse for missing file
+	tmpCfg.ApiKeysPath = tmpPasses.Name() + ".nonexistent" // non-existent file, should be skipped
 	config.ResetForTest(tmpCfg)
 	defer config.ResetForTest(oldGlobal)
 
