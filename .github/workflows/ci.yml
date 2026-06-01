@@ -8,7 +8,7 @@ on:
 
 jobs:
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +24,7 @@ jobs:
         run: gosec -no-fail -fmt=github-actions -out=gosec.sarif ./cmd/... ./internal/... ./storage/...
 
       - name: Run govulncheck
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./cmd/... ./internal/... ./storage/...
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./cmd/... ./internal/... ./storage/...
 
   test:
     runs-on: macos-14
