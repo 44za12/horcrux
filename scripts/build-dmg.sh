@@ -15,17 +15,24 @@ fi
 
 if [ -f "logo.png" ]; then
     echo "Injecting icon from logo.png..."
-    python3 -c "
-from PIL import Image; import os, subprocess
-img = Image.open('logo.png')
-if img.mode != 'RGBA': img = img.convert('RGBA')
-iconset = '/tmp/horcrux.iconset'
-os.makedirs(iconset, exist_ok=True)
-for name, sz in [('icon_16x16.png',16),('icon_16x16@2x.png',32),('icon_32x32.png',32),('icon_32x32@2x.png',64),('icon_128x128.png',128),('icon_128x128@2x.png',256),('icon_256x256.png',256),('icon_256x256@2x.png',512),('icon_512x512.png',512),('icon_512x512@2x.png',1024)]:
-    img.resize((sz,sz),Image.LANCZOS).save(os.path.join(iconset, name))
-subprocess.run(['iconutil','-c','icns',iconset,'-o','$SRC_APP/Contents/Resources/iconfile.icns'],check=True)
-print('Icon injected')
-"
+    ICONSET="/tmp/horcrux.iconset"
+    rm -rf "$ICONSET"
+    mkdir -p "$ICONSET"
+
+    sips -z 16 16   logo.png --out "$ICONSET/icon_16x16.png"
+    sips -z 32 32   logo.png --out "$ICONSET/icon_16x16@2x.png"
+    sips -z 32 32   logo.png --out "$ICONSET/icon_32x32.png"
+    sips -z 64 64   logo.png --out "$ICONSET/icon_32x32@2x.png"
+    sips -z 128 128 logo.png --out "$ICONSET/icon_128x128.png"
+    sips -z 256 256 logo.png --out "$ICONSET/icon_128x128@2x.png"
+    sips -z 256 256 logo.png --out "$ICONSET/icon_256x256.png"
+    sips -z 512 512 logo.png --out "$ICONSET/icon_256x256@2x.png"
+    sips -z 512 512 logo.png --out "$ICONSET/icon_512x512.png"
+    sips -z 1024 1024 logo.png --out "$ICONSET/icon_512x512@2x.png"
+
+    iconutil -c icns "$ICONSET" -o "$SRC_APP/Contents/Resources/iconfile.icns"
+    rm -rf "$ICONSET"
+    echo "Icon injected"
 fi
 
 rm -rf "$DMG_DIR"
