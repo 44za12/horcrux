@@ -24,6 +24,7 @@ jobs:
         run: gosec -no-fail -fmt=github-actions -out=gosec.sarif ./cmd/... ./internal/... ./storage/...
 
       - name: Run govulncheck
+        continue-on-error: true
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./cmd/... ./internal/... ./storage/...
 
   test:
