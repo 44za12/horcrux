@@ -38,8 +38,10 @@ coverage/
 
 # User data (encrypted vault files and exports)
 *.csv
-*.json
 *.bson
+
+# JSON only ignored at root (project config JSON files are tracked)
+/*.json
 
 # OS
 Thumbs.db
